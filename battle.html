@@ -1,0 +1,476 @@
+<html>
+<header>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+<script src="units.js"></script>
+<style>
+input[type=text] { 
+	width: 50px!important;
+}	
+.js_unit:valid {
+	background-color: #CCFFDD;
+}
+.js_unit:invalid {
+	outline: none;
+}
+.js_info {
+	font-size: 12px;
+}
+</style>
+<script>
+$(document).ready(function(){
+	calc();
+	$('input').on('change', function(){
+		calc();
+	});
+
+});
+var emptyHeroInfo = {
+		level: 0,
+		attack:  0,
+		def: 0,
+		charisma: 0,
+		leader: 0,
+		nav: 0,
+		brutal: 0,
+		
+		max_stats: 0,
+		stats: 0,
+		attack_bonus: 0,
+		def_bonus: 0,
+		monks_bonus: 0,
+		healing_bonus: 0,
+		leader_bonus: 0,
+		speed_bonus: 0,
+		brutal_bonus: 0,
+		maroder_bonus: 0
+	};
+var emptyGroupInfo = {
+		count: 0,
+		cost: 0,
+
+		attack:  0,
+		range_attack: 0,
+		def: 0,
+		speed: 1000,
+		visibility: 0,
+		range: 0,
+		heal: 0,
+		sermon: 0
+		
+	};
+
+var groups = {
+	attack: {
+		hero: Object.assign({}, emptyHeroInfo),
+		info: Object.assign({}, emptyGroupInfo),
+		list: []
+	},
+	def: {
+		hero: Object.assign({}, emptyHeroInfo),
+		info: Object.assign({}, emptyGroupInfo),
+		list: []	
+	}
+}
+
+function calc() {
+	colorize('attack');
+	colorize('def');
+	calcHero('attack');
+	calcHero('def');
+	calcGroup('attack');
+	calcGroup('def');
+	doBattle();
+}
+
+function round(val, dec = 0) {
+	return parseFloat(val.toFixed(dec));
+}
+
+function setVal(id, side, val) {
+	$('#' + side + '_' + id).html(val);
+}
+
+function getVal(id, side) {
+	var val = $('#' + side + '_' + id).val();
+	val = val == '' ? 0 : val;
+	return parseInt(val);
+}
+
+function colorize(side) {
+	var inputs = $('.js_unit_' + side);
+	for (input of inputs) {
+		$(input).css('background-color', '#ffffff');
+		$(input).val($(input).val().trim());
+		if ($(input).val() == '' || isNaN(parseInt($(input).val())) || parseInt($(input).val()) == 0) {
+			$(input).val('');
+		} else {
+			$(input).css('background-color', '#ddffdd');
+		}		
+	}
+
+}
+
+function calcHero(side) {
+	groups[side].hero = Object.assign({}, emptyHeroInfo);
+	
+	groups[side].hero.level = getVal('hero_level', side);
+	groups[side].hero.attack = getVal('hero_attack', side);
+	groups[side].hero.def = getVal('hero_def', side);
+	groups[side].hero.charisma = getVal('hero_charisma', side);
+	groups[side].hero.leader = getVal('hero_leader', side);
+	groups[side].hero.nav = getVal('hero_nav', side);
+	groups[side].hero.brutal = getVal('hero_brutal', side);	
+	
+	groups[side].hero.max_stats = groups[side].hero.level * 3;
+	setVal('max_stats', side, groups[side].hero.max_stats);
+	groups[side].hero.stats = groups[side].hero.attack + groups[side].hero.def + groups[side].hero.charisma + groups[side].hero.leader + groups[side].hero.nav + groups[side].hero.brutal;
+	setVal('stats', side, groups[side].hero.stats);
+	
+	groups[side].hero.attack_bonus = round(Math.pow((Math.atan(groups[side].hero.attack/10)/Math.PI*2), 3)*70, 2);
+	setVal('bonus_attack', side, groups[side].hero.attack_bonus);
+
+	groups[side].hero.def_bonus = round(Math.pow((Math.atan(groups[side].hero.def/10)/Math.PI*2), 3)*70, 2);
+	setVal('bonus_def', side, groups[side].hero.def_bonus);
+
+	groups[side].hero.monks_bonus = round(Math.pow((Math.atan(groups[side].hero.charisma/10)/Math.PI*2), 3)*20, 2);
+	setVal('bonus_monks', side, groups[side].hero.monks_bonus);	
+
+	groups[side].hero.healing_bonus = round(Math.pow((Math.atan(groups[side].hero.charisma/10)/Math.PI*2), 3)*100, 2);
+	setVal('bonus_heal', side, groups[side].hero.healing_bonus);
+
+	groups[side].hero.leader_bonus = round(groups[side].hero.level + Math.pow(Math.atan(groups[side].hero.leader/10)/Math.PI*2, 3)*100, 0);
+	setVal('bonus_leader', side, groups[side].hero.leader_bonus);	
+	
+	groups[side].hero.speed_bonus = round(Math.pow(Math.atan(groups[side].hero.nav/10)/Math.PI*2, 2)*10, 0);
+	setVal('bonus_speed', side, groups[side].hero.speed_bonus);	
+	
+	groups[side].hero.brutal_bonus = round(Math.pow(Math.atan(groups[side].hero.brutal/20)/Math.PI*2, 4), 2);
+	groups[side].hero.maroder_bonus = round(Math.pow(Math.atan(groups[side].hero.brutal/10)/Math.PI*2, 3)*100, 0);
+	setVal('bonus_brutal', side, groups[side].hero.brutal_bonus);
+	setVal('bonus_maroder', side, groups[side].hero.maroder_bonus);		
+}
+
+function calcGroup(side) {
+	var unit, count;
+	var strList = '';
+	var strInfo = '';
+	groups[side].info = Object.assign({}, emptyGroupInfo);
+	groups[side].list = [];
+	
+	var inputs = $('.js_unit_' + side);
+	groups[side].info.camp = $('#' + side + '_camp_mode').is(":checked") ? 1 : 0;
+	for (input of inputs) {
+		if ($(input).val() == '' || parseInt($(input).val()) == 0) {
+			continue;
+		}
+		count = parseInt($(input).val());
+		unit = getUnit($(input).data('type'), $(input).data('level'));
+		
+		attack = groups[side].info.camp ? unit.camp_attack : unit.attack;
+		def = groups[side].info.camp ? unit.camp_def : unit.def
+		
+		groups[side].info.count = groups[side].info.count + count;
+		groups[side].info.cost = groups[side].info.cost + unit.cost * count;
+		groups[side].info.attack = groups[side].info.attack + attack * count;
+		groups[side].info.range_attack = groups[side].info.range_attack + unit.range_attack * count;
+		groups[side].info.def = groups[side].info.def + def * count;
+		groups[side].info.speed = Math.min(groups[side].info.speed, unit.speed);
+		groups[side].info.visibility = groups[side].info.visibility + unit.visibility * count;
+		groups[side].info.range = groups[side].info.range + unit.range * count;
+		
+		groups[side].list.push({cost: unit.cost, count: count, type:unit.type, level: unit.level, attack:attack, def:def});		
+	}
+	groups[side].info.attack = round(groups[side].info.attack * (100 + groups[side].hero.attack_bonus) / 100, 0);
+	groups[side].info.range_attack = round(groups[side].info.range_attack * (100 + groups[side].hero.attack_bonus) / 100, 0);
+	groups[side].info.def = round(groups[side].info.def * (100 + groups[side].hero.def_bonus) / 100, 0);
+	groups[side].info.speed = groups[side].info.speed + groups[side].hero.speed_bonus;
+	
+	groups[side].info.visibility = round(Math.pow(groups[side].info.visibility, 1/2) * 3, 0);
+	groups[side].info.range = round(Math.pow(groups[side].info.range, 1/2) * 3, 0);
+
+	setVal('group_units', side, groups[side].info.count);
+	setVal('group_cost', side, groups[side].info.cost);
+	setVal('group_attack', side, groups[side].info.attack);
+	setVal('group_range_attack', side, groups[side].info.range_attack);
+	setVal('group_def', side, groups[side].info.def);
+	setVal('group_speed', side, groups[side].info.speed);
+	setVal('group_visibility', side, groups[side].info.visibility);
+	setVal('group_range', side, groups[side].info.range);
+
+	groups[side].list.sort(function(x, y) {
+		return x.cost <= y.cost ? -1 : 1
+	});
+console.log(groups[side].list);		
+
+	
+	drawCircle(side, groups[side].info.visibility, groups[side].info.range);
+}
+
+function showUnits(side) {
+	var type, level;
+	document.write('<table class="table table-bordered">');
+	document.write('<td>Уровень</td>');
+	for(level = 1; level < 11; level++) {
+		document.write('<td>' + level + '</td>');
+	}		
+	for (type in unitsBases) {
+		document.write('<tr>');
+		document.write('<td>' + type + '</td>');
+		for(level = 1; level < 11; level++) {
+			document.write('<td>');
+			document.write('<span class="js_input"><input class="js_unit_' + side + ' form-control input-sm form-control-sm" data-side=\''+side+'\' data-type=\''+type+'\' data-level=\''+level+'\'"></span>');
+			document.write('<span class="js_info" style="display:none">');
+			unit = getUnit(type, level);
+			document.write('💲 ' + unit.cost + '<br>');
+			document.write('🗡️ ' + unit.attack + '<br>');
+			document.write('️🎪 ' + unit.camp_attack + '<br>');
+			document.write('🏹 ' + unit.range_attack + '<br>');
+			document.write('🛡️ ' + unit.def + '<br>');	
+			document.write('🎪 ' + unit.camp_def + '<br>');
+			document.write('🐎 ' + unit.speed + '<br>');
+			
+			document.write('</span>');
+			document.write('</td>');
+		}		
+		document.write('</tr>');
+	}
+	document.write('</table>');
+}
+
+function addUnit(side, type, level) {
+	var unit = getUnit(type, level);
+	groups[side].list.push(unit);
+	showGroups();
+	doBattle();
+}
+
+function removeUnit(side, id) {
+	groups[side].list.splice(id, 1);
+	showGroups();
+	doBattle();
+}
+
+function drawCircle(side, visibility, range) {
+    var canvas = document.getElementById(side + '_group_canvas');
+	size = Math.max(visibility, range) + 2;
+	$(canvas).css('width', size).css('height', size).attr('width', size).attr('height', size);
+	var context = canvas.getContext('2d');
+	var centerX = Math.floor(canvas.width / 2);
+	var centerY = Math.floor(canvas.height / 2);
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	
+	context.beginPath();
+	context.arc(centerX, centerY, visibility/2, 0, 2 * Math.PI, false);
+	context.lineWidth = 1;
+	context.strokeStyle = 'red';
+	context.stroke();
+
+	context.beginPath();
+	context.arc(centerX, centerY, range/2, 0, 2 * Math.PI, false);
+	context.lineWidth = 1;
+	context.strokeStyle = 'green';
+	context.stroke();
+
+}
+
+function doBattle() {
+	var winner;
+	var attack = {};
+	var def = {};
+	var str = '';
+
+	attack.power = groups.attack.info.attack;
+	def.power    = Math.max(groups.def.info.def - groups.attack.info.range_attack, 0);
+
+	if (attack.power >= def.power) {
+		setVal('result_result', 'attack', 'Победил');
+		setVal('result_result', 'def', 'Проиграл');
+		
+		attack.brutal_bonus = groups.attack.hero.brutal_bonus;
+		def.brutal_bonus = 0;		
+	} else {
+		setVal('result_result', 'def', 'Победил');
+		setVal('result_result', 'attack', 'Проиграл');
+
+		attack.brutal_bonus = 0;
+		def.brutal_bonus = groups.def.hero.brutal_bonus;		
+	}
+
+	//attack.survive = 100 - Math.pow((def.power)/(attack.power), 1.6) * 100;	
+	//def.survive = Math.pow((def.power)/(attack.power), 1.6) * 100;
+	attack.alive = round(Math.pow(attack.power/(attack.power+def.power), 0.8 + def.brutal_bonus) * 100, 2);	
+	def.alive = round(Math.pow(def.power/(attack.power+def.power), 0.8 + attack.brutal_bonus) * 100, 2);
+	setVal('result_alive', 'attack', attack.alive);
+	setVal('result_alive', 'def', def.alive);
+	
+	attack.healed = round((100 - attack.alive) * groups.attack.hero.healing_bonus / 100 , 2);	
+	def.healed = round((100 - def.alive) * groups.def.hero.healing_bonus / 100, 2);	
+	setVal('result_healed', 'attack', attack.healed);
+	setVal('result_healed', 'def', def.healed);
+	
+	attack.dead = round((100 - attack.alive - attack.healed) , 2);	
+	def.dead = round((100 - def.alive - def.healed) , 2);
+	setVal('result_dead', 'attack', attack.dead);
+	setVal('result_dead', 'def', def.dead);	
+	
+	
+	attack.loses = groups.attack.info.cost * attack.dead / 100;
+	def.loses = groups.def.info.cost * def.dead / 100;
+
+console.log(attack.loses);
+console.log(def.loses);
+	
+	attack.loses = getLoses('attack', attack.dead);
+	def.loses = getLoses('def', def.dead);
+	setVal('result_loses', 'attack', attack.loses);
+	setVal('result_loses', 'def', def.loses);
+}
+
+function getLoses(side, percent) {
+	var removeSum = groups[side].info[side] * percent / 100;
+	var losesAmount = 0;
+	var text = '';
+	
+	for(item of groups[side].list) {
+		if (item[side] * item.count <= removeSum) {
+    		losesAmount = losesAmount + item.count * item.cost;
+			removeSum = removeSum - item.count * item[side]; 
+			text = text + '<u>' + item.type + '<sup>' + item.level + '</sup> ' + item.count + '</u><br>';
+		} else {
+			count = 0;
+			if (removeSum > item[side]) {
+				count = Math.round(removeSum / item[side]);
+				losesAmount = losesAmount + count * item.cost;
+				removeSum = removeSum - count * item[side];
+				text = text + '<u>' + item.type + '<sup>' + item.level + '</sup> ' + count + '</u><br>';
+			}			
+			text = text + '' + item.type + '<sup>' + item.level + '</sup> ' + (item.count - count) + '<br>';
+		}
+	}
+	setVal('result_units', side, text);
+	return losesAmount;
+}
+
+function toggleInfo() {
+	if ($('.js_input').is(':visible')) {
+		$('.js_input').hide();
+		$('.js_info').show();
+	} else {
+		$('.js_input').show();
+		$('.js_info').hide();
+	}
+}
+
+</script>
+</header>
+<body>
+<div class="row">
+	<div class="col-sm">
+		<h3>Атакующие</h3>
+	</div>
+	<div class="col-sm">
+	</div>
+	<div class="col-sm">
+		<h3>Бой</h3>
+	</div>
+	<div class="col-sm">
+		<h3>Защищающие</h3>
+	</div>
+	<div class="col-sm">
+	</div>
+</div>
+<div class="row">
+	<div class="col-sm">
+		<table class="table table-bordered">
+			<tr><td>Уровень героя</td><td><input id="attack_hero_level" class="form-control form-control-sm"></td><td>Cтаты <span id="attack_stats"></span>/<span id="attack_max_stats"></span></td></tr>
+			<tr><td>Статы Атака</td><td><input id="attack_hero_attack" class="form-control form-control-sm"></td><td>Атака +<span id="attack_bonus_attack"></span>%</td></tr>
+			<tr><td>Статы Защита</td><td><input id="attack_hero_def" class="form-control form-control-sm"></td><td>Защита +<span id="attack_bonus_def"></span>%</td></tr>
+			<tr><td>Статы Харизма</td><td><input id="attack_hero_charisma" class="form-control form-control-sm"></td><td>Монахи +<span id="attack_bonus_monks"></span>%<br>Лечение +<span id="attack_bonus_heal"></span>%</td></tr>
+			<tr><td>Статы Лидерство</td><td><input id="attack_hero_leader" class="form-control form-control-sm"></td><td>Юнитов +<span id="attack_bonus_leader"></span></td></tr>
+			<tr><td>Статы Навигация</td><td><input id="attack_hero_nav" class="form-control form-control-sm"></td><td>Скорость +<span id="attack_bonus_speed"></span></td></tr>
+			<tr><td>Статы Жестокость</td><td><input id="attack_hero_brutal" class="form-control form-control-sm"></td><td>Жестокость <span id="attack_bonus_brutal"></span><br>Мародерство +<span id="attack_bonus_maroder"></span>%</td></tr>
+			<tr><td colspan=3><canvas id="attack_group_canvas"></canvas></td></td>
+		</table>
+	</div>
+	<div class="col-sm">
+		<table class="table table-bordered">
+			<tr><td>Группа</td><td><div class="form-group form-check"><input type=checkbox id="attack_camp_mode" class="form-check-input"><label class="form-check-label" for="attack_camp_mode">лагерь</label></td></tr>
+			<tr><td>Юнитов</td><td><span id="attack_group_units"></span></td></tr>
+			<tr><td>Стоимость</td><td><span id="attack_group_cost"></span>$</td></tr>
+			<tr><td>Атака</td><td><span id="attack_group_attack"></span></td></tr>
+			<tr><td>Атака стрелами</td><td><span id="attack_group_range_attack"></span></td></tr>
+			<tr><td>Защита</td><td><span id="attack_group_def"></span></td></tr>
+			<tr><td>Скорость</td><td><span id="attack_group_speed"></span></td></tr>
+			<tr><td>Видимость</td><td><span id="attack_group_visibility"></span></td></tr>
+			<tr><td>Обзор</td><td><span id="attack_group_range"></span></td></tr>
+			<tr><td>Лечение</td><td><span id="attack_group_heal"></span>%</td></tr>
+			<tr><td>Проповеди</td><td><span id="attack_group_sermon"></span></td></tr>
+		</table>
+	</div>
+	<div class="col-sm">
+		<table class="table table-bordered">
+			<tr><td align=center><span id="attack_result_result"></span></td><td align=center><span id="def_result_result"></span></td></tr>
+			<tr><td colspan=2 align=center>Выжившие</td></tr>
+			<tr><td><span id="attack_result_alive"></span>%</td><td><span id="def_result_alive"></span>%</td></tr>
+			<tr><td colspan=2 align=center>Погибшие</td></tr>
+			<tr><td><span id="attack_result_dead"></span>%</td><td><span id="def_result_dead"></span>%</td></tr>
+			<tr><td colspan=2 align=center>Вылеченные</td></tr>
+			<tr><td><span id="attack_result_healed"></span>%</td><td><span id="def_result_healed"></span>%</td></tr>
+			<tr><td colspan=2 align=center>Опыт героя</td></tr>
+			<tr><td><span id="attack_result_exp"></span></td><td><span id="def_result_exp"></span></td></tr>
+			<tr><td colspan=2 align=center>Сумма потерь</td></tr>
+			<tr><td><span id="attack_result_loses"></span>$</td><td><span id="def_result_loses"></span>$</td></tr>
+			<tr><td colspan=2 align=center>Потери</td></tr>
+			<tr><td><span id="attack_result_units"></span></td><td><span id="def_result_units"></span></td></tr>
+
+		</table>
+	</div>
+	<div class="col-sm">
+		<table class="table table-bordered">
+			<tr><td>Уровень героя</td><td><input id="def_hero_level" class="form-control form-control-sm"></td><td>Cтаты <span id="def_stats"></span>/<span id="def_max_stats"></span></td></tr>
+			<tr><td>Статы Атака</td><td><input id="def_hero_attack" class="form-control form-control-sm"></td><td>Атака +<span id="def_bonus_attack"></span>%</td></tr>
+			<tr><td>Статы Защита</td><td><input id="def_hero_def" class="form-control form-control-sm"></td><td>Защита +<span id="def_bonus_def"></span>%</td></tr>
+			<tr><td>Статы Харизма</td><td><input id="def_hero_charisma" class="form-control form-control-sm"></td><td>Монахи +<span id="def_bonus_monks"></span>%<br>Лечение +<span id="def_bonus_heal"></span>%</td></tr>
+			<tr><td>Статы Лидерство</td><td><input id="def_hero_leader" class="form-control form-control-sm"></td><td>Юнитов +<span id="def_bonus_leader"></span></td></tr>
+			<tr><td>Статы Навигация</td><td><input id="def_hero_nav" class="form-control form-control-sm"></td><td>Скорость +<span id="def_bonus_speed"></span></td></tr>
+			<tr><td>Статы Жестокость</td><td><input id="def_hero_brutal" class="form-control form-control-sm"></td><td>Жестокость <span id="def_bonus_brutal"></span><br>Мародерство +<span id="def_bonus_maroder"></span>%</td></tr>
+			<tr><td colspan=3><canvas id="def_group_canvas"></canvas></td></td>
+		</table>
+	</div>
+	<div class="col-sm">
+		<table class="table table-bordered">
+			<tr><td>Группа</td><td><div class="form-group form-check"><input type=checkbox id="def_camp_mode" class="form-check-input"><label class="form-check-label" for="def_camp_mode">лагерь</label></div></td></tr>
+			<tr><td>Юнитов</td><td><span id="def_group_units"></span></td></tr>
+			<tr><td>Стоимость</td><td><span id="def_group_cost"></span>$</td></tr>
+			<tr><td>Атака</td><td><span id="def_group_attack"></span></td></tr>
+			<tr><td>Атака стрелами</td><td><span id="def_group_range_attack"></span></td></tr>
+			<tr><td>Защита</td><td><span id="def_group_def"></span></td></tr>
+			<tr><td>Скорость</td><td><span id="def_group_speed"></span></td></tr>
+			<tr><td>Видимость</td><td><span id="def_group_visibility"></span></td></tr>
+			<tr><td>Обзор</td><td><span id="def_group_range"></span></td></tr>
+			<tr><td>Лечение</td><td><span id="def_group_heal"></span>%</td></tr>
+			<tr><td>Проповеди</td><td><span id="def_group_sermon"></span></td></tr>
+		</table>
+	</div>
+
+</div>
+
+
+<table width="100%">
+<tr>
+	<td width="50%"><button onclick="toggleInfo()">Характеристики / количество</button></td>
+	<td width="50%"></td>
+</tr>
+<tr>
+	<td><script>showUnits('attack')</script></td>
+	<td><script>showUnits('def')</script></td>
+</tr>
+
+<script>
+
+
+</body>
+</html>
